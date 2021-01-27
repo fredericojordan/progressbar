@@ -51,7 +51,12 @@ type template_params struct {
 func main() {
 	r := gin.Default()
 	r.GET("/:progress/", render_progress)
+	r.GET("/", redirect_to_github)
 	r.Run()
+}
+
+func redirect_to_github(context *gin.Context) {
+	context.Redirect(http.StatusFound, "https://github.com/fredericojordan/progressbar")
 }
 
 func render_progress(context *gin.Context) {
