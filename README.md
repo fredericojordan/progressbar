@@ -1,4 +1,4 @@
-# progress-bar.dev
+# progress-bar-go.herokuapp.com
 
 Replicating [progress-bar.dev](https://progress-bar.dev/) functionality in a simplified way (no query params).
 
