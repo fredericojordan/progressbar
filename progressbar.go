@@ -8,7 +8,7 @@ import (
 	"text/template"
 )
 
-var progress_template string = `<?xml version="1.0" encoding="UTF-8"?>
+var progressTemplate string = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="118" height="20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid">
   <linearGradient id="a" x2="0" y2="100%">
     <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
@@ -17,9 +17,9 @@ var progress_template string = `<?xml version="1.0" encoding="UTF-8"?>
 
   <rect rx="4" x="0" width="118" height="20" fill="#428bca"/>
   <rect rx="4" x="58" width="60" height="20" fill="#555" />
-  <rect rx="4" x="58" width="{{.Progress_width}}" height="20" fill="{{.Progress_color}}" />
+  <rect rx="4" x="58" width="{{.ProgressWidth}}" height="20" fill="{{.ProgressColor}}" />
 
-    <path fill="{{.Progress_color}}" d="M58 0h4v20h-4z" />
+    <path fill="{{.ProgressColor}}" d="M58 0h4v20h-4z" />
 
   <rect rx="4" width="118" height="20" fill="url(#a)" />
 
@@ -42,33 +42,37 @@ var progress_template string = `<?xml version="1.0" encoding="UTF-8"?>
   </g>
 </svg>`
 
-type template_params struct {
-	Progress       int
-	Progress_width int
-	Progress_color string
+type templateParams struct {
+	Progress      int
+	ProgressWidth int
+	ProgressColor string
 }
 
 func main() {
-	r := gin.Default()
-	r.GET("/:progress/", render_progress)
-	r.GET("/", redirect_to_github)
-	r.Run()
+	setupServer().Run()
 }
 
-func redirect_to_github(context *gin.Context) {
+func setupServer() *gin.Engine {
+	r := gin.Default()
+	r.GET("/:progress/", renderProgress)
+	r.GET("/", redirectToGithub)
+	return r
+}
+
+func redirectToGithub(context *gin.Context) {
 	context.Redirect(http.StatusFound, "https://github.com/fredericojordan/progressbar")
 }
 
-func render_progress(context *gin.Context) {
-	progress_str := context.Param("progress")
+func renderProgress(context *gin.Context) {
+	progressStr := context.Param("progress")
 
-	progress, err := strconv.ParseInt(progress_str, 10, 32)
+	progress, err := strconv.ParseInt(progressStr, 10, 32)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 		return
 	}
 
-	text, err := render_svg(int(progress))
+	text, err := renderSVG(int(progress))
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 		return
@@ -78,7 +82,7 @@ func render_progress(context *gin.Context) {
 	context.String(http.StatusOK, text)
 }
 
-func progress_color(progress int) string {
+func progressColor(progress int) string {
 	if progress < 30 {
 		return "#d9534f"
 	}
@@ -88,15 +92,15 @@ func progress_color(progress int) string {
 	return "#5cb85c"
 }
 
-func render_svg(progress int) (string, error) {
+func renderSVG(progress int) (string, error) {
 
-	params := template_params{
-		Progress:       progress,
-		Progress_width: int(60 * progress / 100),
-		Progress_color: progress_color(progress),
+	params := templateParams{
+		Progress:      progress,
+		ProgressWidth: int(60 * progress / 100),
+		ProgressColor: progressColor(progress),
 	}
 
-	prog_template, err := template.New("progress").Parse(progress_template)
+	progTemplate, err := template.New("progress").Parse(progressTemplate)
 
 	if err != nil {
 		return "", err
@@ -104,7 +108,7 @@ func render_svg(progress int) (string, error) {
 
 	buffer := new(bytes.Buffer)
 
-	if err := prog_template.Execute(buffer, params); err != nil {
+	if err := progTemplate.Execute(buffer, params); err != nil {
 		return "", err
 	}
 
